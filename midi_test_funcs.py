@@ -12,7 +12,7 @@ def test_write_c(): # Confirmed to work on ToneJS at least. Actual programs do n
     with open("testdata/test_c32.mid", "wb") as f:
         f.write(bytes.fromhex(hex_data))
 
-def read_raw_hex(filename):
+def print_raw_hex(filename):
     with open(filename, 'rb') as f:
         data = f.read()
     # Convert bytes to hex string, uppercase, spaced by two chars for readability
