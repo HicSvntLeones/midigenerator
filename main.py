@@ -64,25 +64,36 @@ def run_config():
         elif command[0] in section_list:
             stamp(5, "Received command matching section name.")
             print(dict(config[command[0]].items()))
+        elif comlen != 2:
+            stamp(3, "Received wrong number of arguments.")
+            print("Config keys take exactly 1 argument.")
         else:
             stamp(5, "Received non-section or exit command.")
             match command[0]:
                 case "log_level":
-                    command[1] = parse_int(command[1])
-                    if comlen == 2 and isinstance(command[1], int) and 1 <= command[1] <= 5:
-                        print(f"setting log_level to {command[1]}")
-                        config.set('logger','log_level',command[1])
-                        write_config(config)
-                    else:
-                        print(f"log_level takes 1 argument: integer between 1 and 5.")
+                    try:
+                        command[1] = parse_int(command[1])
+                        if isinstance(command[1], int) and 1 <= command[1] <= 5:
+                            print(f"setting log_level to {command[1]}")
+                            config.set('logger','log_level',str(command[1]))
+                            write_config(config)
+                        else:
+                            print(f"log_level takes integer between 1 and 5.")
+                    except:
+                        print(f"log_level takes integer between 1 and 5.")
 
                 case "include_time":
-                    if comlen == 2 and isinstance(command[1], bool):
-                        print(f"setting include_time to {command[1]}")
-                        config.set('logger','log_level',command[1])
-                        write_config(config)
-                    else:
-                        print(f"log_level takes 1 argument: boolean.")
+                    try:
+                        command[1] = parse_bool(command[1])
+                        if isinstance(command[1], bool):
+                            print(f"setting include_time to {command[1]}")
+                            config.set('logger','include_time',str(command[1]))
+                            write_config(config)
+                        else:
+                            print(f"include_time takes boolean.")
+                    except:
+                        print(f"include_time takes boolean.")
+
                 case _:
                     stamp(4, "Received command that doesn't match a key.")
                     print("Not a valid section name or key.")
