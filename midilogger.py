@@ -28,9 +28,9 @@ def stamp(level = 5, msg=""):
 def set_log_level(n):
     global log_level 
     log_level = n
-    stamp(5, f"Log level set to {n}")
+    stamp(4, f"Log level set to {n}")
 
 def set_log_time(n):
     global include_time
     include_time = n
-    stamp(5, f"Include debug timestamps set to {n}")
+    stamp(4, f"Include debug timestamps set to {n}")
