@@ -2,6 +2,7 @@ from pathlib import Path
 import configparser
 from midilogger import *
 from input_parsers import *
+from get_info import *
 
 from midi_test_funcs import print_raw_hex
 from midiheader_funcs import prime_header
@@ -26,26 +27,26 @@ def main():
 
 def read_command(): # Most of the user input processing logic is handled here.
     command = input(">").strip().lower().split()
+    args = len(command)-1
     match command[0]:
         case "help"|"h":
             stamp(5, "Received help command.")
-            display_help()
+            if args == 0:
+                get_info("help")
+            elif args > 0:
+                get_info(command[1])
         case "config"|"settings"|"c":
             stamp(5, "Received config command.")
             run_config()
         case "exit"|"quit"|"q"|"end":
             stamp(5, "Received exit command.")
             return "exit"
+        case "test":
+            if args == 0:
+                pass
         case _:
             stamp(4, "Received unknown command.")
             print("Unknown command.")
-
-def display_help():
-    help_file = Path(__file__).parent / "help.md"
-    if help_file.exists():
-        print(help_file.read_text())
-    else:
-        stamp(2, "help.md missing")
 
 def run_config():
     running_config = True
@@ -69,7 +70,7 @@ def run_config():
             print("Config keys take exactly 1 argument.")
         else:
             stamp(5, "Received non-section or exit command.")
-            match command[0]:
+            match command[0]: # Config match/case begins here. Going to be pretty gross to look at but that's a problem for future me.
                 case "log_level":
                     try:
                         command[1] = parse_int(command[1])
@@ -98,7 +99,7 @@ def run_config():
                     stamp(4, "Received command that doesn't match a key.")
                     print("Not a valid section name or key.")
 
-            
+# END OF CONFIG MATCH/CASE BLOCK
 
 def load_config():
     custom_config = Path(__file__).parent / "customconfig.ini"
@@ -119,6 +120,7 @@ def load_config():
 def apply_config(config):
     set_log_level(config.getint('logger', 'log_level'))
     set_log_time(config.getboolean('logger', 'include_time'))
+    stamp(5, "Applied all configs.")
 
 def write_config(config):
     with open('customconfig.ini', 'w') as configfile:
