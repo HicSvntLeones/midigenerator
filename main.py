@@ -4,10 +4,6 @@ from midilogger import *
 from input_parsers import *
 from get_info import *
 
-from midi_test_funcs import print_raw_hex
-from midiheader_funcs import prime_header
-from midireader_funcs import disambiguate_midi
-
 #primed_hex = []
 #prime_header(primed_hex)
 #print(primed_hex)
@@ -43,7 +39,14 @@ def read_command(): # Most of the user input processing logic is handled here.
             return "exit"
         case "test":
             if args == 0:
-                pass
+                get_info("test")
+            elif args > 0:
+                match command[1]:
+                    case "1":
+                        midi_test_1()
+                    case _:
+                        stamp(4, "Received unknown argument.")
+                        print("Unknown argument.")
         case _:
             stamp(4, "Received unknown command.")
             print("Unknown command.")

@@ -2,3 +2,4 @@ __pycache__/
 testdata/
 customconfig.ini
 .vscode/settings.json
+assets/generated
