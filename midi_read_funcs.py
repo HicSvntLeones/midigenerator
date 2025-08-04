@@ -31,8 +31,8 @@ def disambiguate_timing(hexes):
     midi_PPQN = None
     midi_FPS = None
     midi_TPS = None
-    byte1 = int(hexes[0])
-    byte2 = int(hexes[0])
+    byte1 = int(hexes[0], 16)
+    byte2 = int(hexes[1], 16)
     signed_byte1 =  byte1 if byte1 < 128 else byte1 - 256
 
     if signed_byte1 >= 0:
