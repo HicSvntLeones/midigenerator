@@ -12,6 +12,7 @@ You can set your configs here.
 Available Test Commands: -test [number] <description>
     -test [1] <Prints test midi.>
     -test [2] <Generates test midi 01. This should be a short C note. (May be cut short by some software.)>
+    -test [3] <Analyzes test midi.>
 
 !-->exit
 This exits the program or submenu :)
