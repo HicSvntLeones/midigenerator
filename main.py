@@ -3,6 +3,7 @@ import configparser
 from midilogger import *
 from input_parsers import *
 from get_info import *
+from midi_tests import *
 
 #primed_hex = []
 #prime_header(primed_hex)
@@ -44,6 +45,8 @@ def read_command(): # Most of the user input processing logic is handled here.
                 match command[1]:
                     case "1":
                         midi_test_1()
+                    case "2":
+                        midi_test_2()
                     case _:
                         stamp(4, "Received unknown argument.")
                         print("Unknown argument.")
