@@ -98,7 +98,7 @@ def disambiguate_header(hex_array, scan_pos, desc_array):
     time_type, midi_PPQN, midi_FPS, midi_TPS = disambiguate_timing(popped)
     stamp(4,f"Header chunk completed with: {midi_format_type}, {track_count}, {time_type}, {midi_PPQN}, {midi_FPS}, {midi_TPS}")
     
-    desc_array.append((1, midi_format_type, track_count, time_type, midi_PPQN, midi_FPS, midi_TPS))
+    desc_array.append((1, midi_format_type, track_count, time_type, midi_PPQN, midi_FPS, midi_TPS, "<MIDI file header>"))
     return scan_pos, desc_array
 
 def slice_match(array_1, index_1, array_2, index_2, comp_length):
@@ -140,9 +140,77 @@ def validate_body(hex_array, scan_pos, desc_array):
     stamp(4, f"Body validated with ({header_count},{end_track_count},{desc_array[0][2]}), all three integers should match.")
     return True
 
+def disambiguate_4D(hex_array, scan_pos, desc_array):
+    if slice_match(hex_array, scan_pos, ["4D", "54", "72", "6B"], 0, 4):
+        popped, scan_pos = pop_hex(hex_array, scan_pos+4, 4) #Since the file has already been validated, skipping right to the length is ok.
+        track_length = int(''.join(popped), 16)
+        desc_array.append((2, track_length, f"<Track marker. Track is {track_length} bytes long>"))
+        return scan_pos, desc_array, True
+    elif slice_match(hex_array, scan_pos, ["4D", "54", "68", "64"], 0, 4):
+        stamp(2, "MIDI header somewhere where it really shouldn't be? (Honestly I'm not sure if it's even possible to proc this error.)")
+        return scan_pos, desc_array, False
+    else:
+        stamp(2, f"Invalid byte format following 4D at {scan_pos}.")
+        return scan_pos, desc_array, False
+
+def disambiguate_FF_51(hex_array, scan_pos, desc_array, total_d):
+    popped, scan_pos = pop_hex(hex_array, scan_pos, 2)
+    if read_hex(hex_array, scan_pos) != ['03']:
+        stamp(2, "Malformed tempo meta event.")
+        return hex_array, scan_pos, desc_array
+    popped, scan_pos = pop_hex(hex_array, scan_pos, 1)
+    popped, scan_pos = pop_hex(hex_array, scan_pos, 3)
+    tempo = int(''.join(popped), 16)
+    bpm = 60000000 / tempo
+    stamp(5, f"Tempo of {tempo} / {bpm} BPM")
+    desc_array.append((3, {tempo}, {bpm}, f"BPM set to {bpm}"))
+    return scan_pos, desc_array, tempo, bpm
+
+
+
 
 def disambiguate_body(hex_array, scan_pos, desc_array):
-    pass
+    hex_len = len(hex_array)
+    next_hex = ""
+    total_d = 0
+    current_d = 0
+    in_track = False
+    current_bpm = 1
+    current_tempo = 1
+    time_type = desc_array[0][3]
+    delta_per_quarter = desc_array[0][4]
+    midi_FPS = desc_array[0][5]
+    midi_TPS = desc_array[0][6]
+
+    while scan_pos < hex_len:
+        next_hex = read_hex(hex_array, scan_pos)
+        if in_track and int(''.join(next_hex), 16) < 128:
+            next_hex = int(''.join(next_hex), 16)
+            stamp(5, f"In track: {in_track}, converting to int.")
+        match next_hex: 
+            case next_hex if isinstance(next_hex, int) and next_hex < 128:
+                current_d += next_hex
+                stamp(5, f"Delta: {current_d}")
+                scan_pos += 1
+            case ['4D']:
+                scan_pos, desc_array, in_track = disambiguate_4D(hex_array, scan_pos, desc_array)
+                current_d = 0
+            case ['FF']:
+                # FF is the meta event marker, with the type defined by the following byte.
+                match read_hex(hex_array, scan_pos+1):
+                    case ['51']:
+                        total_d += current_d
+                        current_d = 0
+                        scan_pos, desc_array, current_tempo, current_bpm = disambiguate_FF_51(hex_array, scan_pos, desc_array, total_d)
+                    case _:
+                        stamp(2, f"Meta event without case hit: {next_hex} {read_hex(hex_array, scan_pos+1)} at {scan_pos}")
+                        return scan_pos, desc_array
+                # Finally, check if not case not caught.
+            case _:
+                stamp(2, f"Hex without case hit: {next_hex} at {scan_pos}")
+                print(desc_array)
+                return scan_pos, desc_array
+
 
 
 def disambiguate_midi(filepath):
@@ -151,4 +219,6 @@ def disambiguate_midi(filepath):
     scan_pos = 0
     scan_pos, desc_array = disambiguate_header(hex_array, scan_pos, desc_array)
     if not validate_body(hex_array, scan_pos, desc_array):
-        pass
+        print("MIDI file is invalid or malformed.")
+        return
+    scan_pos, desc_array = disambiguate_body(hex_array, scan_pos, desc_array)
