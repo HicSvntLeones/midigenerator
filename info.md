@@ -11,7 +11,7 @@ You can set your configs here.
 !-->test
 Available Test Commands: -test [number] <description>
     -test [1] <Prints test midi.>
-    -test [2] <Generates test midi 01. This should be a short C note. (May be cut short by some software.)>
+    -test [2] <Generates test midi 01 to /assets/generated/tests/. This should be a short C note. (May be cut short by some software.)>
     -test [3] <Analyzes test midi.>
     -test [4] <Tests the slice_match function.>
 

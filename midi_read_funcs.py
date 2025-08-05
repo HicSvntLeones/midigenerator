@@ -161,9 +161,9 @@ def disambiguate_FF_51(hex_array, scan_pos, desc_array, total_d):
     popped, scan_pos = pop_hex(hex_array, scan_pos, 1)
     popped, scan_pos = pop_hex(hex_array, scan_pos, 3)
     tempo = int(''.join(popped), 16)
-    bpm = 60000000 / tempo
+    bpm = int(60000000 / tempo)
     stamp(5, f"Tempo of {tempo} / {bpm} BPM")
-    desc_array.append((3, {tempo}, {bpm}, f"BPM set to {bpm}"))
+    desc_array.append((3, total_d, tempo, bpm, f"BPM set to {bpm}"))
     return scan_pos, desc_array, tempo, bpm
 
 
@@ -181,6 +181,9 @@ def disambiguate_body(hex_array, scan_pos, desc_array):
     delta_per_quarter = desc_array[0][4]
     midi_FPS = desc_array[0][5]
     midi_TPS = desc_array[0][6]
+
+    if time_type != "PPQN":
+        stamp(1, "Disambiguator currently only supports MIDI that uses PPQN timing, sorry!")
 
     while scan_pos < hex_len:
         next_hex = read_hex(hex_array, scan_pos)
@@ -202,8 +205,11 @@ def disambiguate_body(hex_array, scan_pos, desc_array):
                         total_d += current_d
                         current_d = 0
                         scan_pos, desc_array, current_tempo, current_bpm = disambiguate_FF_51(hex_array, scan_pos, desc_array, total_d)
+                    #case ['58']:
+                        #pass
                     case _:
                         stamp(2, f"Meta event without case hit: {next_hex} {read_hex(hex_array, scan_pos+1)} at {scan_pos}")
+                        print(desc_array)
                         return scan_pos, desc_array
                 # Finally, check if not case not caught.
             case _:
