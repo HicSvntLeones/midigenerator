@@ -49,6 +49,8 @@ def read_command(): # Most of the user input processing logic is handled here.
                         midi_test_2()
                     case "3":
                         midi_test_3()
+                    case "4":
+                        midi_test_4()
                     case _:
                         stamp(4, "Received unknown argument.")
                         print("Unknown argument.")

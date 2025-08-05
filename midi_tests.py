@@ -31,6 +31,12 @@ def midi_test_2():
     else:
         print("File generation failed.")
 
+def midi_test_4():
+    print("Expecting True True False.")
+    print(slice_match([1, 2, 3, 4], 1, [1, 2, 3, 4, 5, 6, 7], 1, 3))
+    print(slice_match([3,6,2,7,4,7,4,7,3,7,4], 2, [2,7,4,7,6,4,6,7,3], 0, 4))
+    print(slice_match([3,4,7,3,8,3,7], 1, [5,8,2,6,4,8,3,2,6,7], 2, 3))
+
 def midi_test_3():
     midi_filepath = Path(__file__).parent / 'assets' / 'static' / "read_test.mid"
     disambiguate_midi(midi_filepath)

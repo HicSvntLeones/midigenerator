@@ -3,3 +3,4 @@ testdata/
 customconfig.ini
 .vscode/settings.json
 assets/generated
+event_ids.md
