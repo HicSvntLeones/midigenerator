@@ -30,6 +30,32 @@ def pop_hex(hex_array, scan_pos, n=1):
         return pop, scan_pos
     stamp(2, "Array out of bounds.")
 
+def read_VLQ(hex_array, scan_pos):
+    stamp(5, f"Reading VLQ from {scan_pos}")
+    total = 0
+    byte_count = 0
+    end_bit = False
+    while end_bit == False:
+        byte_count += 1
+        popped, scan_pos = pop_hex(hex_array, scan_pos)
+        val = int(popped[0],16)
+        if val >= 128:
+            val-=128
+        else:
+            end_bit = True
+        total =+ val
+    stamp(5, f"VLQ resolved: {byte_count} byte(s) with value {total}.")
+    return total, scan_pos
+
+def read_hex_as_ascii(hex_array, scan_pos, length):
+    string_array = []
+    popped, scan_pos = pop_hex(hex_array, scan_pos, length)
+    string = ''.join(chr(int(h, 16)) for h in popped)
+    stamp(5, f"String read from hex as '{string}'")
+    return string, scan_pos
+
+
+
 def disambiguate_timing(hexes):
     time_type = None
     midi_PPQN = None
@@ -145,45 +171,94 @@ def disambiguate_4D(hex_array, scan_pos, desc_array):
         popped, scan_pos = pop_hex(hex_array, scan_pos+4, 4) #Since the file has already been validated, skipping right to the length is ok.
         track_length = int(''.join(popped), 16)
         desc_array.append((2, track_length, f"<Track marker. Track is {track_length} bytes long>"))
-        return scan_pos, desc_array, True
+        return scan_pos, True
     elif slice_match(hex_array, scan_pos, ["4D", "54", "68", "64"], 0, 4):
         stamp(2, "MIDI header somewhere where it really shouldn't be? (Honestly I'm not sure if it's even possible to proc this error.)")
-        return scan_pos, desc_array, False
+        return scan_pos, False
     else:
         stamp(2, f"Invalid byte format following 4D at {scan_pos}.")
-        return scan_pos, desc_array, False
+        return scan_pos, False
 
 def disambiguate_FF_51(hex_array, scan_pos, desc_array, total_d):
     popped, scan_pos = pop_hex(hex_array, scan_pos, 2)
-    if read_hex(hex_array, scan_pos) != ['03']:
-        stamp(2, "Malformed tempo meta event.")
-        return hex_array, scan_pos, desc_array
-    popped, scan_pos = pop_hex(hex_array, scan_pos, 1)
+    length, scan_pos = read_VLQ(hex_array, scan_pos)
+    if length != 3:
+        stamp(2, f"Malformed tempo meta event. Expected value 3 received {length}")
+        return scan_pos
     popped, scan_pos = pop_hex(hex_array, scan_pos, 3)
     tempo = int(''.join(popped), 16)
     bpm = int(60000000 / tempo)
     stamp(5, f"Tempo of {tempo} / {bpm} BPM")
     desc_array.append((3, total_d, tempo, bpm, f"BPM set to {bpm}"))
-    return scan_pos, desc_array, tempo, bpm
+    return scan_pos
 
+def disambiguate_FF_58(hex_array, scan_pos, desc_array, total_d):
+    popped, scan_pos = pop_hex(hex_array, scan_pos, 2)
+    length, scan_pos = read_VLQ(hex_array, scan_pos)
+    if length != 4:
+        stamp(2, "Malformed tempo meta event.")
+        return scan_pos
+    popped, scan_pos = pop_hex(hex_array, scan_pos, 1)
+    numerator = int(popped[0], 16)
+    popped, scan_pos = pop_hex(hex_array, scan_pos, 1)
+    denominator = 2**(int(popped[0],16))
+    popped, scan_pos = pop_hex(hex_array, scan_pos, 1)
+    clocks_per_metronome_tick = int(popped[0], 16)
+    popped, scan_pos = pop_hex(hex_array, scan_pos, 1)
+    thirtyseconds_per_tick = int(popped[0], 16)
+    desc_array.append((4, total_d, numerator, denominator, clocks_per_metronome_tick, thirtyseconds_per_tick, f"Time signature set to {numerator}/{denominator}, {clocks_per_metronome_tick} clocks per metronome, {thirtyseconds_per_tick} 32nd notes per quarter."))
+    return scan_pos
 
+def disambiguate_FF_2F(hex_array, scan_pos, desc_array, total_d):
+    popped, scan_pos = pop_hex(hex_array, scan_pos, 2)
+    length, scan_pos = read_VLQ(hex_array, scan_pos)
+    if length != 0:
+        stamp(2, f"Malformed end of track event, length should always be 0, received {length}")
+    desc_array.append((5, total_d, f"End of track at {total_d}"))
+    return scan_pos, False
 
+def disambiguate_FF_03(hex_array, scan_pos, desc_array, total_d):
+    popped, scan_pos = pop_hex(hex_array, scan_pos, 2)
+    length, scan_pos = read_VLQ(hex_array, scan_pos)
+    instrument, scan_pos = read_hex_as_ascii(hex_array, scan_pos, length)
+    desc_array.append((6, total_d, instrument, f"Instrument set to {instrument} at {total_d}"))
+    return scan_pos
+    
+def disambiguate_B(hex_array, scan_pos, desc_array, total_d):
+    popped, scan_pos = pop_hex(hex_array, scan_pos, 3)
+    channel = int(popped[0][1], 16)
+    controller = int(popped[1], 16)
+    value = int(popped[2], 16)
+    match controller:
+        case 0:
+            controller_name = "Bank Select MSB"
+        case 1:
+            controller_name = "Mod Wheel"
+        case 7:
+            controller_name = "Volume"
+        case 10:
+            controller_name = "Pan"
+        case 64:
+            controller_name = "Sustain Pedal"
+        case 74:
+            controller_name = "Brightness"
+        case 120:
+            controller_name = "All Sound Off"
+        case _:
+            controller_name = "Undefined"
+    desc_array.append((7, total_d, channel, controller, value, controller_name, f"Control change on channel {channel}: {controller} - {controller_name} set to {value}"))
+    return scan_pos
 
 def disambiguate_body(hex_array, scan_pos, desc_array):
     hex_len = len(hex_array)
     next_hex = ""
     total_d = 0
-    current_d = 0
     in_track = False
-    current_bpm = 1
-    current_tempo = 1
     time_type = desc_array[0][3]
-    delta_per_quarter = desc_array[0][4]
-    midi_FPS = desc_array[0][5]
-    midi_TPS = desc_array[0][6]
 
     if time_type != "PPQN":
         stamp(1, "Disambiguator currently only supports MIDI that uses PPQN timing, sorry!")
+        return
 
     while scan_pos < hex_len:
         next_hex = read_hex(hex_array, scan_pos)
@@ -192,30 +267,37 @@ def disambiguate_body(hex_array, scan_pos, desc_array):
             stamp(5, f"In track: {in_track}, converting to int.")
         match next_hex: 
             case next_hex if isinstance(next_hex, int) and next_hex < 128:
-                current_d += next_hex
-                stamp(5, f"Delta: {current_d}")
+                total_d += next_hex
+                stamp(5, f"Delta: {total_d}")
                 scan_pos += 1
             case ['4D']:
-                scan_pos, desc_array, in_track = disambiguate_4D(hex_array, scan_pos, desc_array)
-                current_d = 0
+                scan_pos, in_track = disambiguate_4D(hex_array, scan_pos, desc_array)
             case ['FF']:
                 # FF is the meta event marker, with the type defined by the following byte.
                 match read_hex(hex_array, scan_pos+1):
+                    case ['03']:
+                        scan_pos = disambiguate_FF_03(hex_array, scan_pos, desc_array, total_d)
+                    case ['2F']:
+                        scan_pos, in_track = disambiguate_FF_2F(hex_array, scan_pos, desc_array, total_d)
                     case ['51']:
-                        total_d += current_d
-                        current_d = 0
-                        scan_pos, desc_array, current_tempo, current_bpm = disambiguate_FF_51(hex_array, scan_pos, desc_array, total_d)
-                    #case ['58']:
-                        #pass
+                        scan_pos = disambiguate_FF_51(hex_array, scan_pos, desc_array, total_d)
+                    case ['58']:
+                        scan_pos = disambiguate_FF_58(hex_array, scan_pos, desc_array, total_d)
                     case _:
                         stamp(2, f"Meta event without case hit: {next_hex} {read_hex(hex_array, scan_pos+1)} at {scan_pos}")
-                        print(desc_array)
+                        print(*desc_array, sep='\n')
                         return scan_pos, desc_array
-                # Finally, check if not case not caught.
+                
             case _:
-                stamp(2, f"Hex without case hit: {next_hex} at {scan_pos}")
-                print(desc_array)
-                return scan_pos, desc_array
+                # Check for the events that just use the first 4bits as the identifier.
+                match next_hex[0][0]:
+                    case 'B':
+                        scan_pos = disambiguate_B(hex_array, scan_pos, desc_array, total_d)
+                # Finally, check if not case not caught.
+                    case _:
+                        stamp(2, f"Hex without case hit: {next_hex} at {scan_pos}")
+                        print(*desc_array, sep='\n')
+                        return scan_pos, desc_array
 
 
 
