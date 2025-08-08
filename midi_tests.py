@@ -39,4 +39,5 @@ def midi_test_4():
 
 def midi_test_3():
     midi_filepath = Path(__file__).parent / 'assets' / 'static' / "read_test.mid"
-    disambiguate_midi(midi_filepath)
+    results = disambiguate_midi(midi_filepath)
+    print(*results, sep='\n')

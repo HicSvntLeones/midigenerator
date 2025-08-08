@@ -1,5 +1,7 @@
 from midilogger import stamp
 
+#In retrospect, all of this might have been easier to define within a class, but I wasn't expecting this to end up as large as it did. Oh well.
+
 def midi_to_hex_array(filepath):
     try:
         with open(filepath, 'rb') as f:
@@ -249,6 +251,46 @@ def disambiguate_B(hex_array, scan_pos, desc_array, total_d):
     desc_array.append((7, total_d, channel, controller, value, controller_name, f"Control change on channel {channel}: {controller} - {controller_name} set to {value}"))
     return scan_pos
 
+def disambiguate_C(hex_array, scan_pos, desc_array, total_d):
+    popped, scan_pos = pop_hex(hex_array, scan_pos, 2)
+    channel = int(popped[0][1], 16)
+    program = int(popped[1], 16)
+    desc_array.append((8, total_d, channel, program, f"Program on channel {channel} changed to {program}."))
+    return scan_pos     
+
+
+def disambiguate_9(hex_array, scan_pos, desc_array, total_d):
+    popped, scan_pos = pop_hex(hex_array, scan_pos, 3)
+    channel = int(popped[0][1], 16)
+    pitch = int(popped[1], 16)
+    velocity = int(popped[2], 16)
+    stamp(5, f"Note on with {channel, pitch, velocity}")
+    if velocity == 0:
+        stamp(5, "Velocity 0, converting to Note Off")
+        on_off_event_conversion(desc_array, total_d, channel, pitch, velocity)
+        return scan_pos
+    else:
+        length = 0
+        matched = False
+        desc_array.append((0, total_d, channel, pitch, velocity, matched, length, f"Channel {channel} note on, pitch {pitch}, velocity {velocity}."))
+        return scan_pos
+
+def on_off_event_conversion(desc_array, total_d, channel, pitch, velocity):
+    stamp(5, f"Note off with {channel, pitch, velocity}")
+    matched = False
+    desc_array.append((9, total_d, channel, pitch, velocity, matched, f"Channel {channel} note off, pitch {pitch}, velocity {velocity}."))
+
+
+def disambiguate_8(hex_array, scan_pos, desc_array, total_d):
+    popped, scan_pos = pop_hex(hex_array, scan_pos, 3)
+    channel = int(popped[0][1], 16)
+    pitch = int(popped[1], 16)
+    velocity = int(popped[2], 16)
+    stamp(5, f"Note off with {channel, pitch, velocity}")
+    matched = False
+    desc_array.append((9, total_d, channel, pitch, velocity, matched, f"Channel {channel} note off, pitch {pitch}, velocity {velocity}."))
+    return scan_pos
+
 def disambiguate_body(hex_array, scan_pos, desc_array):
     hex_len = len(hex_array)
     next_hex = ""
@@ -261,15 +303,20 @@ def disambiguate_body(hex_array, scan_pos, desc_array):
         return
 
     while scan_pos < hex_len:
+        await_delta = True
+        if in_track:
+            while await_delta:
+                popped, scan_pos = pop_hex(hex_array, scan_pos)
+                pop_int = int(''.join(popped), 16)
+                if pop_int >= 128:
+                    total_d += pop_int-128
+                else:
+                    total_d += pop_int
+                    await_delta = False
+         
         next_hex = read_hex(hex_array, scan_pos)
-        if in_track and int(''.join(next_hex), 16) < 128:
-            next_hex = int(''.join(next_hex), 16)
-            stamp(5, f"In track: {in_track}, converting to int.")
+
         match next_hex: 
-            case next_hex if isinstance(next_hex, int) and next_hex < 128:
-                total_d += next_hex
-                stamp(5, f"Delta: {total_d}")
-                scan_pos += 1
             case ['4D']:
                 scan_pos, in_track = disambiguate_4D(hex_array, scan_pos, desc_array)
             case ['FF']:
@@ -291,13 +338,21 @@ def disambiguate_body(hex_array, scan_pos, desc_array):
             case _:
                 # Check for the events that just use the first 4bits as the identifier.
                 match next_hex[0][0]:
+                    case '8':
+                        scan_pos = disambiguate_8(hex_array, scan_pos, desc_array, total_d)
+                    case '9':
+                        scan_pos = disambiguate_9(hex_array, scan_pos, desc_array, total_d)
                     case 'B':
                         scan_pos = disambiguate_B(hex_array, scan_pos, desc_array, total_d)
+                    case 'C':
+                        scan_pos = disambiguate_C(hex_array, scan_pos, desc_array, total_d)
                 # Finally, check if not case not caught.
                     case _:
                         stamp(2, f"Hex without case hit: {next_hex} at {scan_pos}")
                         print(*desc_array, sep='\n')
                         return scan_pos, desc_array
+    desc_array.append((999, total_d, f"End of file at {total_d}"))
+    return scan_pos, desc_array
 
 
 
@@ -308,5 +363,6 @@ def disambiguate_midi(filepath):
     scan_pos, desc_array = disambiguate_header(hex_array, scan_pos, desc_array)
     if not validate_body(hex_array, scan_pos, desc_array):
         print("MIDI file is invalid or malformed.")
-        return
+        return desc_array
     scan_pos, desc_array = disambiguate_body(hex_array, scan_pos, desc_array)
+    return desc_array
