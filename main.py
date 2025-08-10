@@ -5,11 +5,6 @@ from input_parsers import *
 from get_info import *
 from midi_tests import *
 
-#primed_hex = []
-#prime_header(primed_hex)
-#print(primed_hex)
-#disambiguate_midi("testdata/C3_test_example.mid")
-
 def main():
     config = load_config()
     apply_config(config)
@@ -35,6 +30,9 @@ def read_command(): # Most of the user input processing logic is handled here.
         case "config"|"settings"|"c":
             stamp(5, "Received config command.")
             run_config()
+        case "default"|"defaults"|"reset":
+            stamp(5, "Received default reset command.")
+            reset_config()
         case "exit"|"quit"|"q"|"end":
             stamp(5, "Received exit command.")
             return "exit"
@@ -51,6 +49,8 @@ def read_command(): # Most of the user input processing logic is handled here.
                         midi_test_3()
                     case "4":
                         midi_test_4()
+                    case "5":
+                        midi_test_5()
                     case _:
                         stamp(4, "Received unknown argument.")
                         print("Unknown argument.")
@@ -137,6 +137,14 @@ def write_config(config):
         config.write(configfile)
     stamp(4, "User defined config file created.")
 
+def reset_config():
+    default_config = Path(__file__).parent / "defaultconfig.ini"
+    config = configparser.ConfigParser()
+    config.read(default_config)
+    stamp(4, "Overwriting custom config with defaults.")
+    write_config(config)
+    print("Config set to defaults.")
+    
 if __name__ == "__main__":
     main()
     
