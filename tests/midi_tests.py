@@ -1,6 +1,7 @@
 from pathlib import Path
 from utils.midilogger import stamp
 from utils.midi_read_funcs import *
+from generators.command_generator import *
 
 def midi_test_1():
     try:
@@ -42,5 +43,5 @@ def midi_test_3():
     results = disambiguate_midi(midi_filepath)
     print(*results, sep='\n')
 
-def midi_test_5():
-    pass
+def midi_test_5(midi_settings):
+    comgen = CommandGenerator(midi_settings)

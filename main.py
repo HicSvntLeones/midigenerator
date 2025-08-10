@@ -4,6 +4,8 @@ from utils.midilogger import *
 from utils.input_parsers import *
 from utils.get_info import *
 from tests.midi_tests import *
+from utils.config_dict import *
+from tests.test_settings import *
 
 def main():
     config = load_config()
@@ -50,7 +52,11 @@ def read_command(): # Most of the user input processing logic is handled here.
                     case "4":
                         midi_test_4()
                     case "5":
-                        midi_test_5()
+                        config = load_config()
+                        midi_settings = generate_config_dict(config)
+                        stamp(5, midi_settings)
+                        test_midi_settings = set_test_settings(midi_settings, 5)
+                        midi_test_5(test_midi_settings)
                     case _:
                         stamp(4, "Received unknown argument.")
                         print("Unknown argument.")
