@@ -1,6 +1,8 @@
 from midilogger import stamp
 
 #In retrospect, all of this might have been easier to define within a class, but I wasn't expecting this to end up as large as it did. Oh well.
+#For the moment, this doesn't (or probably won't) play nice with midi's that have multiple tracks that play in parralel. 
+#As this isn't meant to be a full parser, only a debugging tool for my other uses, I probably won't add this functionality.
 
 def midi_to_hex_array(filepath):
     try:
@@ -354,6 +356,45 @@ def disambiguate_body(hex_array, scan_pos, desc_array):
     desc_array.append((999, total_d, f"End of file at {total_d}"))
     return scan_pos, desc_array
 
+def find_event_match(desc_array, x):
+    item_ch = desc_array[x][2]
+    item_pitch = desc_array[x][3]
+    for i in range (x, len(desc_array)):
+        stamp(5, f"Potential match {desc_array[i]}")
+        if desc_array[i][0] == 9 and desc_array[i][2] == item_ch and desc_array[i][3] == item_pitch and desc_array[i][5] == False:
+            return i
+    stamp(2, f"No match found.")
+    return 0
+
+def match_notes(desc_array, i, match):
+    desc_array[i] = (desc_array[i][0], desc_array[i][1], desc_array[i][2], desc_array[i][3], desc_array[i][4], True, desc_array[match][1] - desc_array[i][1], desc_array[i][7])
+    desc_array[match] = (desc_array[match][0], desc_array[match][1], desc_array[match][2], desc_array[match][3], desc_array[match][4], True, desc_array[match][6])
+    stamp(5, f"Matched {desc_array[i]} and {desc_array[match]}")
+
+def check_note_strays(desc_array):
+    x = 0
+    y = 0
+    for i in range (0, len(desc_array)):
+        if desc_array[i][0] == 0 and desc_array[i][5] == False:
+            x+=1
+        if desc_array[i][0] == 9 and desc_array[i][5] == False:
+            y+=1
+    return x, y
+
+def join_note_events(desc_array):
+    stamp(5, "Joining note events")
+    for i in range (0, len(desc_array)):
+        stamp(5, f"Checking item {desc_array[i]}")
+        if desc_array[i][0] == 0 and desc_array[i][5] == False:
+            stamp(5, f"Unpaired note found at {desc_array[i]}")
+            match = find_event_match(desc_array, i)
+            if match == 0:
+                stamp(2, f"No match for {desc_array[i]}")
+            else:
+                stamp(5, f"Match at {desc_array[i]}, joining.")
+                match_notes(desc_array, i, match)
+    remaining_on, remaining_off = check_note_strays(desc_array)
+    stamp(4, f"Note events joined with {remaining_on} unmatched on events and {remaining_off} unmatched off events.")
 
 
 def disambiguate_midi(filepath):
@@ -365,4 +406,5 @@ def disambiguate_midi(filepath):
         print("MIDI file is invalid or malformed.")
         return desc_array
     scan_pos, desc_array = disambiguate_body(hex_array, scan_pos, desc_array)
+    join_note_events(desc_array)
     return desc_array
