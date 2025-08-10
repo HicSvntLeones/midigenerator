@@ -1,9 +1,9 @@
 from pathlib import Path
 import configparser
-from midilogger import *
-from input_parsers import *
-from get_info import *
-from midi_tests import *
+from utils.midilogger import *
+from utils.input_parsers import *
+from utils.get_info import *
+from tests.midi_tests import *
 
 def main():
     config = load_config()

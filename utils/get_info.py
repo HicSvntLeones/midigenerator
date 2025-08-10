@@ -1,4 +1,4 @@
-from midilogger import stamp
+from utils.midilogger import stamp
 from pathlib import Path
 
 def get_info(section):

@@ -1,4 +1,4 @@
-from midilogger import stamp
+from utils.midilogger import stamp
 
 #In retrospect, all of this might have been easier to define within a class, but I wasn't expecting this to end up as large as it did. Oh well.
 #For the moment, this doesn't (or probably won't) play nice with midi's that have multiple tracks that play in parralel. 

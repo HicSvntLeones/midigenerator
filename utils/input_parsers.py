@@ -1,4 +1,4 @@
-from midilogger import stamp
+from utils.midilogger import stamp
 
 def parse_int(n):
     if isinstance(n, int):

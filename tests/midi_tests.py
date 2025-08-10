@@ -1,6 +1,6 @@
 from pathlib import Path
-from midilogger import stamp
-from midi_read_funcs import *
+from utils.midilogger import stamp
+from utils.midi_read_funcs import *
 
 def midi_test_1():
     try:
