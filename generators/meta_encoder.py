@@ -1,0 +1,1 @@
+# This takes a list of commands from CommandGenerator and passes a list of events sorted by delta_time to a MidiEncoder.

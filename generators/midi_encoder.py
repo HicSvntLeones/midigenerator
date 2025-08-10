@@ -1,0 +1,1 @@
+# This takes a list of events sorted by delta_time from the MetaEncoder, turns them into valid MIDI data and encodes into a midi.

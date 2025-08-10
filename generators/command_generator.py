@@ -1,0 +1,1 @@
+# This generates a list of music commands from the inputed config and passes a list of events to the MetaEncoder.
