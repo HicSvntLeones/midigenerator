@@ -45,3 +45,4 @@ def midi_test_3():
 
 def midi_test_5(midi_settings):
     comgen = CommandGenerator(midi_settings)
+    comgen.generate_single_note()
