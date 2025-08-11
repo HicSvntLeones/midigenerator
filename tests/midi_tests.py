@@ -39,10 +39,9 @@ def midi_test_4():
     print(slice_match([3,4,7,3,8,3,7], 1, [5,8,2,6,4,8,3,2,6,7], 2, 3))
 
 def midi_test_3():
-    midi_filepath = Path(__file__).parent / 'assets' / 'static' / "read_test.mid"
+    midi_filepath = Path(__file__).parent.parent / 'assets' / 'static' / "read_test.mid"
     results = disambiguate_midi(midi_filepath)
     print(*results, sep='\n')
 
 def midi_test_5(midi_settings):
-    comgen = CommandGenerator(midi_settings)
-    comgen.generate_single_note()
+    comgen = CommandGenerator(midi_settings, (0,"0"))

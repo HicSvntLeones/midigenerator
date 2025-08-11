@@ -1,5 +1,6 @@
 from utils.midilogger import *
 from utils.midi_gen_funcs import *
+from generators.meta_encoder import *
 
 # This generates a list of music commands from the inputed config and passes a list of events to the MetaEncoder.
 
@@ -41,18 +42,64 @@ class CommandGenerator:
         if advance:
             self.advance_time(length)
 
-    def generate_single_note(self):
-        #Used for testing purposes.
+    def test_generate_single_note(self):
+        #Used for test 5.
+        self.metadata['name'] += "test_midi_02"
         self.add_note(pitch = self.root_note, length = 4)
         stamp(5, f"generated single note: {self.event_sheet}")
+        
 
-    def __init__(self, midi_settings):
+
+    def pass_to_meta_encoder(self, event_sheet, metadata):
+        encoder = MetaEncoder(event_sheet, metadata)
+
+    def write_metadata(self):
+        stamp(5, "Writing metadata for command generator...")
+        self.metadata['ppq'] = self.ppq
+        self.metadata['bpm'] = self.bpm
+        self.metadata['time_sig_num'] = self.time_sig[0]
+        self.metadata['time_sig_den'] = self.time_sig[1]
+        self.metadata['track_count'] = self.track_count
+        stamp(5, f"Generate metadata: {self.metadata}")
+
+    def parse_command(self, command):
+        #'Command' is a tuple of an integer and a string. Integer is for version control, while the string is the actual command.
+        match command[0]:
+            case 0:
+                match command[1]:
+                    case '0':
+                        #Test 5
+                        self.test_generate_single_note()
+                    case _:
+                         stamp(2, f"Unmatched command, {command[1]} of {command}")
+            case _:
+                stamp(2, f"Unmatched command, {command[0]} of {command}")
+        
+
+    def setup(self, midi_settings):
         self.midi_settings = midi_settings
-        stamp(5, f"Initiated CommandGenerator with{self.midi_settings}")
         self.event_sheet = []
+        self.track_count = 1 #Zero indexed, where 0 is the settings.
+        self.metadata = {}
+        self.metadata['name'] = ""
     
         self.time_sig = (int(midi_settings['time_num']), int(midi_settings['time_den']))
         self.bpm = int(midi_settings['bpm'])
         self.ppq = int(midi_settings['ppq'])
         self.root_note = get_pitch(self.midi_settings['root_note'])
         self.current_time = (0,0.0)
+
+        stamp(5, f"Setup CommandGenerator with {self.midi_settings}")
+
+
+    def __init__(self, midi_settings, command):
+        stamp(5, f"Initilizing CommandGenerator.")
+        self.setup(midi_settings)
+        self.parse_command(command)
+        self.write_metadata()
+        self.pass_to_meta_encoder(self.event_sheet, self.metadata)
+
+        
+        
+
+        
