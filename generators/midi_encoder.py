@@ -77,20 +77,8 @@ class MidiEncoder:
                 self.handle_event_Set_Tempo()
             case "Set Time Signature":
                 self.handle_event_Set_Time_Signature()
-            case "testthing":  # Remove this later
-                self.tempfunc()
             case _:
                 stamp(2, f"Unhandled event in encode_event {self.current_event}")
-
-
-    def tempfunc(self):
-        hex = []
-        delta_time = self.delta_delta_time()
-        hex = self.hexlist_append(hex, delta_time)
-        HEXES = "FF030E41636F7573746963205069616E6F"
-        hex = self.hexlist_append(hex, HEXES)
-        self.hexdata[self.current_track] += hex
-        stamp(5, f"Adding {hex} to sub-list of track {self.current_track}")
 
     def handle_Control_Change(self):
         stamp(5, f"... with parameters {self.current_event[1:]}")

@@ -57,8 +57,6 @@ class CommandGenerator:
 
     def test_generate_single_note(self):
         #Used for test 5.
-        #self.metadata['ppq'] = 1000
-        #self.ppq = 1000
         self.metadata['filename'] = "test_midi_02.mid"
         self.metadata['filepath'] = "assets/generated/tests/"
         self.add_note(pitch = self.root_note, length = 4)
