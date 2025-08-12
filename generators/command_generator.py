@@ -1,6 +1,6 @@
 from utils.midilogger import *
 from utils.midi_gen_funcs import *
-from generators.meta_encoder import *
+from generators.meta_encoder import MetaEncoder
 
 # This generates a list of music commands from the inputed config and passes a list of events to the MetaEncoder.
 
@@ -23,20 +23,26 @@ class CommandGenerator:
         den_mult = 4/self.time_sig[1]
         ppq_time = time[0] * den_mult * self.ppq * self.time_sig[0]
         ppq_time += time[1] * den_mult * self.ppq
-        return ppq_time
+        return int(ppq_time)
+    
+    def get_ppq_length(self, length = 4):
+        return int(1/length * 4 * self.ppq)
         
 
-    def add_note(self, pitch = 60, length = 4, time = -1, velocity = 64, track = 1, advance = True):
+    def add_note(self, pitch = 60, length = 4, time = -1, velocity = 64, track = 1, channel = 0, advance = True):
         if time == -1:
             time = self.current_time
         note_entry = {
             'type':'note',
             'track':track,
+            'channel':channel,
             'ppq_time':self.get_ppq_time(time),
             'time':time,
             'pitch':pitch,
             'length':length,
-            'velocity':velocity
+            'ppq_length':self.get_ppq_length(length),
+            'velocity':velocity,
+            'encoded':False
         }
         self.event_sheet.append(note_entry)
         if advance:
@@ -51,7 +57,7 @@ class CommandGenerator:
 
 
     def pass_to_meta_encoder(self, event_sheet, metadata):
-        encoder = MetaEncoder(event_sheet, metadata)
+        meta_encoder = MetaEncoder(event_sheet, metadata)
 
     def write_metadata(self):
         stamp(5, "Writing metadata for command generator...")
@@ -82,6 +88,7 @@ class CommandGenerator:
         self.track_count = 1 #Zero indexed, where 0 is the settings.
         self.metadata = {}
         self.metadata['name'] = ""
+        self.metadata['instruments'] = "default"
     
         self.time_sig = (int(midi_settings['time_num']), int(midi_settings['time_den']))
         self.bpm = int(midi_settings['bpm'])

@@ -15,7 +15,7 @@ def stamp(level = 5, msg=""):
         case 3:
             level_str = "[DEBUG]"
         case 4:
-            level_str = "[INFO]"
+            level_str = "[TRACE]"
         case _:
             pass
 
