@@ -2,6 +2,7 @@ from utils.midilogger import *
 from utils.midi_gen_funcs import int_to_hex
 from utils.midi_gen_funcs import int_to_VLQ
 from math import log2
+from pathlib import Path
 
 # This takes a list of events sorted by delta_time from the MetaEncoder, turns them into valid MIDI data and encodes into a midi.
 
@@ -25,6 +26,20 @@ class MidiEncoder:
     def main(self):
         self.events_to_hex()
         stamp(4, f"Hex data completed: {self.hexdata}")
+        self.create_concatenated_hex()
+        self.write_midi()
+
+    def create_concatenated_hex(self):
+        self.to_write = ''.join([byte for track in self.hexdata for byte in track])
+        stamp(5, f"Hex data concatenated: {self.to_write}")
+
+    def write_midi(self):
+        output_dir = Path(__file__).parent.parent / self.metadata['filepath'] 
+        output_dir.mkdir(parents=True, exist_ok=True)
+        write_midi = Path(__file__).parent.parent / self.metadata['filepath'] / self.metadata['filename']
+        with open(write_midi, "wb") as file:
+            file.write(bytes.fromhex(self.to_write))
+        stamp(5, f"{self.metadata['filename']} created in {self.metadata['filepath']}")
 
     def events_to_hex(self):
         stamp(3, "Starting hex encoding...")
@@ -62,9 +77,20 @@ class MidiEncoder:
                 self.handle_event_Set_Tempo()
             case "Set Time Signature":
                 self.handle_event_Set_Time_Signature()
+            case "testthing":  # Remove this later
+                self.tempfunc()
             case _:
                 stamp(2, f"Unhandled event in encode_event {self.current_event}")
 
+
+    def tempfunc(self):
+        hex = []
+        delta_time = self.delta_delta_time()
+        hex = self.hexlist_append(hex, delta_time)
+        HEXES = "FF030E41636F7573746963205069616E6F"
+        hex = self.hexlist_append(hex, HEXES)
+        self.hexdata[self.current_track] += hex
+        stamp(5, f"Adding {hex} to sub-list of track {self.current_track}")
 
     def handle_Control_Change(self):
         stamp(5, f"... with parameters {self.current_event[1:]}")
@@ -83,7 +109,7 @@ class MidiEncoder:
     def handle_End_Track(self):
         stamp(5, f"... with parameters {self.current_event[1:]}")
         hex = []
-        END_TRACK = "FF2F00"
+        END_TRACK = "00FF2F00"
         hex = self.hexlist_append(hex, END_TRACK)
         self.hexdata[self.current_track] += hex
         self.replace_MTrk_length()

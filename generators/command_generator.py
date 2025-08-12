@@ -6,6 +6,13 @@ from generators.meta_encoder import MetaEncoder
 
 class CommandGenerator:
 
+    def __init__(self, midi_settings, command):
+        stamp(5, f"Initilizing CommandGenerator.")
+        self.setup(midi_settings)
+        self.parse_command(command)
+        self.write_metadata()
+        self.pass_to_meta_encoder(self.event_sheet, self.metadata)
+
     def advance_time(self, length):
         #Can be called as part of a note event to automatically set the current time to after that note ends.
         current_beat = self.current_time[1]
@@ -50,7 +57,10 @@ class CommandGenerator:
 
     def test_generate_single_note(self):
         #Used for test 5.
-        self.metadata['name'] += "test_midi_02"
+        #self.metadata['ppq'] = 1000
+        #self.ppq = 1000
+        self.metadata['filename'] = "test_midi_02.mid"
+        self.metadata['filepath'] = "assets/generated/tests/"
         self.add_note(pitch = self.root_note, length = 4)
         stamp(5, f"generated single note: {self.event_sheet}")
         
@@ -99,12 +109,7 @@ class CommandGenerator:
         stamp(5, f"Setup CommandGenerator with {self.midi_settings}")
 
 
-    def __init__(self, midi_settings, command):
-        stamp(5, f"Initilizing CommandGenerator.")
-        self.setup(midi_settings)
-        self.parse_command(command)
-        self.write_metadata()
-        self.pass_to_meta_encoder(self.event_sheet, self.metadata)
+
 
         
         
