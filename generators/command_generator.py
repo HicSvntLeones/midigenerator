@@ -6,25 +6,21 @@ from generators.meta_encoder import MetaEncoder
 
 class CommandGenerator:
 
-    def __init__(self, midi_settings, command):
+    def __init__(self):
         stamp(5, f"Initilizing CommandGenerator.")
-        self.setup(midi_settings)
-        self.parse_command(command)
-        self.main()
+        #self.setup(midi_settings)
+        #self.main()
         
-    def setup(self, midi_settings):
-        self.midi_settings = midi_settings
+    def setup(self, metadata):
+        self.metadata = metadata
         self.event_sheet = []
         self.track_count = 1 #Zero indexed, where 0 is the settings.
-        self.metadata = {}
-        self.metadata['name'] = ""
         self.metadata['instruments'] = "default"
-        self.time_sig = (int(midi_settings['time_num']), int(midi_settings['time_den']))
-        self.bpm = int(midi_settings['bpm'])
-        self.ppq = int(midi_settings['ppq'])
-        self.root_note = get_pitch(self.midi_settings['root_note'])
+        self.time_sig = (4, 4)
+        self.bpm = int(metadata['bpm'])
+        self.ppq = int(metadata['ppq'])
         self.current_time = (0,0.0)
-        stamp(5, f"Setup CommandGenerator with {self.midi_settings}")
+        stamp(5, f"Setup CommandGenerator with {self.metadata}")
 
     def main(self):
         self.write_metadata()
@@ -41,19 +37,6 @@ class CommandGenerator:
 
     def pass_to_meta_encoder(self, event_sheet, metadata):
         meta_encoder = MetaEncoder(event_sheet, metadata)
-
-    def parse_command(self, command):
-        #'Command' is a tuple of an integer and a string.
-        match command[0]:
-            case 0: #Test commands
-                match command[1]:
-                    case '0':
-                        #Test 5
-                        self.test_generate_single_note()
-                    case _:
-                         stamp(2, f"Unmatched command, {command[1]} of {command}")
-            case _:
-                stamp(2, f"Unmatched command, {command[0]} of {command}")
 
     def advance_time(self, length):
         #Can be called as part of a note event to automatically set the current time to after that note ends.
@@ -76,8 +59,8 @@ class CommandGenerator:
     
     def get_ppq_length(self, length = 4):
         return int(1/length * 4 * self.ppq)
-        
-    def add_note(self, pitch = 60, length = 4, time = -1, velocity = 64, track = 1, channel = 0, advance = True):
+    
+    def add_note(self, pitch = 60, length = 4, time = -1, velocity = 64, track = 1, channel = 0, advance = False):
         if time == -1:
             time = self.current_time
         note_entry = {
@@ -95,13 +78,6 @@ class CommandGenerator:
         self.event_sheet.append(note_entry)
         if advance:
             self.advance_time(length)
-
-    def test_generate_single_note(self):
-        #Used for test 5.
-        self.metadata['filename'] = "test_midi_02.mid"
-        self.metadata['filepath'] = "assets/generated/tests/"
-        self.add_note(pitch = self.root_note, length = 4)
-        stamp(5, f"generated single note: {self.event_sheet}")
         
 
 

@@ -5,6 +5,7 @@ from utils.input_parsers import *
 from utils.get_info import *
 from tests.midi_tests import *
 from tests.test_settings import *
+from generators.progression_generator import ProgressionGenerator
 
 def main():
     config = load_config()
@@ -37,7 +38,11 @@ def read_command(): # Most of the user input processing logic is handled here.
         case "exit"|"quit"|"q"|"end":
             stamp(5, "Received exit command.")
             return "exit"
+        case "gen":
+            gen = ProgressionGenerator()
+            gen.execute(command[1:])
         case "test":
+            print("Warning: Deprecated tests, probably won't work. (I probably should remove these)")
             if args == 0:
                 get_info("test")
             elif args > 0:
