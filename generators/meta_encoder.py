@@ -1,7 +1,7 @@
 from utils.midilogger import *
 from generators.midi_encoder import MidiEncoder
 
-# This takes a list of commands from CommandGenerator and passes a list of events sorted by delta_time/track to a MidiEncoder.
+# This takes a list of commands from CommandGenerator and passes a list of event tuples sorted by delta_time/track to a MidiEncoder.
 
 class MetaEncoder:
     def __init__(self, event_sheet, metadata):
