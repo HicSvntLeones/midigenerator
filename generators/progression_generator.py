@@ -233,14 +233,13 @@ class ProgressionGenerator:
         self.prog_dicts[3]['patterns'] = ['chordarp']
         self.prog_dicts[3]['octaves'] = [4]
         stamp(5, f"Prog dicts stack is now: {self.prog_dicts}")
-
+#'ION':['ION', 0, 2, 4, 5, 7, 9, 11],
     def degree_to_pitch(self, scale, degree):
-        loop = degree//7
-        remainder = degree % 7
+        loop = (degree-1)//7
+        remainder = (degree % 7)
         if remainder == 0:
-            val = loop*12
-        else:
-            val = loop*12 + scale[remainder]
+            remainder = 7
+        val = loop*12 + scale[remainder]
         stamp(5, f"Degree to pitch:{val}")
         return val
 
