@@ -22,7 +22,7 @@ class CommandGenerator:
         self.current_time = (0,0.0)
         stamp(5, f"Setup CommandGenerator with {self.metadata}")
 
-    def main(self):
+    def run(self):
         self.write_metadata()
         self.pass_to_meta_encoder(self.event_sheet, self.metadata)
 
@@ -78,6 +78,7 @@ class CommandGenerator:
         self.event_sheet.append(note_entry)
         if advance:
             self.advance_time(length)
+        stamp(5, f"CommandGenerator added {note_entry} to event sheet")
         
 
 

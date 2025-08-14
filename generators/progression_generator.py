@@ -10,6 +10,7 @@ class ProgressionGenerator:
         self.generate_def_dict()
         self.prog_dicts = []
         self.command_dicts = []
+        self.note_list = []
 
     def define_constants(self):
         self.MODES = {
@@ -32,11 +33,46 @@ class ProgressionGenerator:
             'Bb':10,'B':11, 'Bs':12 
         }
 
+        self.DECODE_PROG =  { # For new base note relative to root by degree
+            'I':0, 'II':1, 'III':2, 'IV':3, 'V':4, 'VI':5, 'VII':6
+        }
+
         self.PATTERNS = {
-            'root':[{'time':(0,0), 'length':1, 'degree':1, 'velocity': 64}],
-            'triad':[{'time':(0,0), 'length':1, 'degree':1, 'velocity': 64}, 
-                     {'time':(0,0), 'length':1, 'degree':3, 'velocity': 64}, 
-                     {'time':(0,0), 'length':1, 'degree':5, 'velocity': 64}],
+            'root': [       {  'time':(0,0),       'length':1,     'degree':1,     'shift':0,       'velocity': 64}],
+
+            'triad':[       {  'time':(0,0),       'length':1,     'degree':1,     'shift':0,       'velocity': 64}, 
+                            {  'time':(0,0),       'length':1,     'degree':3,     'shift':0,       'velocity': 64}, 
+                            {  'time':(0,0),       'length':1,     'degree':5,     'shift':0,       'velocity': 64}],
+
+            'scale':[       {  'time':(0,0),       'length':8,     'degree':1,     'shift':0,       'velocity': 64},
+                            {  'time':(0,0.5),     'length':8,     'degree':2,     'shift':0,       'velocity': 64},
+                            {  'time':(0,1),       'length':8,     'degree':3,     'shift':0,       'velocity': 64},
+                            {  'time':(0,1.5),     'length':8,     'degree':4,     'shift':0,       'velocity': 64},
+                            {  'time':(0,2),       'length':8,     'degree':5,     'shift':0,       'velocity': 64},
+                            {  'time':(0,2.5),     'length':8,     'degree':6,     'shift':0,       'velocity': 64},
+                            {  'time':(0,3),       'length':8,     'degree':7,     'shift':0,       'velocity': 64},
+                            {  'time':(0,3.5),     'length':8,     'degree':8,     'shift':0,       'velocity': 64}],
+
+            'maj7':[        {  'time':(0,0),       'length':1,     'degree':1,     'shift':0,       'velocity': 64},
+                            {  'time':(0,0),       'length':1,     'degree':3,     'shift':0,       'velocity': 64},
+                            {  'time':(0,0),       'length':1,     'degree':5,     'shift':0,       'velocity': 64},
+                            {  'time':(0,0),       'length':1,     'degree':7,     'shift':0,       'velocity': 64}],
+
+            'chordarp':[    {  'time':(0,0),       'length':8,     'degree':1,     'shift':0,       'velocity': 64},
+                            {  'time':(0,0),       'length':8,     'degree':3,     'shift':0,       'velocity': 64},
+                            {  'time':(0,0),       'length':8,     'degree':5,     'shift':0,       'velocity': 64},
+                            {  'time':(0,1),       'length':8,     'degree':1,     'shift':0,       'velocity': 64},
+                            {  'time':(0,1),       'length':8,     'degree':3,     'shift':0,       'velocity': 64},
+                            {  'time':(0,1),       'length':8,     'degree':5,     'shift':0,       'velocity': 64},
+                            {  'time':(0,1),       'length':8,     'degree':7,     'shift':-1,      'velocity': 64},
+                            {  'time':(0,2),       'length':8,     'degree':1,     'shift':0,       'velocity': 64},
+                            {  'time':(0,2),       'length':8,     'degree':3,     'shift':-1,      'velocity': 64},
+                            {  'time':(0,2),       'length':8,     'degree':5,     'shift':0,       'velocity': 64},
+                            {  'time':(0,2),       'length':8,     'degree':7,     'shift':-1,      'velocity': 64},
+                            {  'time':(0,3),       'length':8,     'degree':1,     'shift':0,       'velocity': 64},
+                            {  'time':(0,3),       'length':8,     'degree':3,     'shift':0,       'velocity': 64},
+                            {  'time':(0,3),       'length':8,     'degree':5,     'shift':0,       'velocity': 64},
+                            {  'time':(0,3),       'length':8,     'degree':7,     'shift':0,       'velocity': 64}],
         }
         self.DEFINITION_DICT_TEMPLATE = {
             'filepath': "",
@@ -60,7 +96,7 @@ class ProgressionGenerator:
             'octaves':[4] #List of octaves of the patters (integers)
         }
 
-        self.COMMAND_DICT_TEMPLATE = { #turn this into straight up note and pass to the generator
+        self.NOTE_DICT_TEMPLATE = { #turn this into straight up note and pass to the generator
             'root': 48,
             'mode': "ION",
             'degree':'I',
@@ -72,6 +108,9 @@ class ProgressionGenerator:
 
     def generate_prog_dict(self):
         return self.PROG_DICT_TEMPLATE.copy()
+    
+    def generate_note_dict(self):
+        return self.NOTE_DICT_TEMPLATE.copy()
 
     def execute(self, arguments): #Entry point for most calls.
         print(f"Progression generator starting with arguments: {arguments}")
@@ -107,7 +146,15 @@ class ProgressionGenerator:
         stamp(4, f"Beginning main procress with {self.def_dict}")
         self.read_def_string()
         self.generate_primary_dicts()
+        self.unpack_prog_dicts()
         self.comgen.setup(self.def_dict)
+        self.send_notes_to_comgen()
+        self.comgen.run()
+
+    def send_notes_to_comgen(self):
+        stamp(5, "sending notes to comgen")
+        for note in self.note_list:
+            self.comgen.add_note(note[0],note[1],note[2],note[3],note[4],note[5],note[6])
 
     def read_def_string(self):
         stamp(5, f"Processing defstring {self.def_dict['def_string']}")
@@ -177,12 +224,64 @@ class ProgressionGenerator:
             new_dict['mode'] = mode_array
             new_dict['prog'] = prog_array
             self.prog_dicts.append(new_dict)
-        self.prog_dicts[0]['pattern'] = ['triad']
-        self.prog_dicts[0]['octave'] = [4]
-        self.prog_dicts[1]['pattern'] = ['root','scale']
-        self.prog_dicts[1]['octave'] = [4, 3]
-        self.prog_dicts[2]['pattern'] = ['maj7']
-        self.prog_dicts[2]['octave'] = [4]
-        self.prog_dicts[3]['pattern'] = ['arp']
-        self.prog_dicts[3]['octave'] = [4]
+        self.prog_dicts[0]['patterns'] = ['triad']
+        self.prog_dicts[0]['octaves'] = [4]
+        self.prog_dicts[1]['patterns'] = ['root','scale']
+        self.prog_dicts[1]['octaves'] = [3, 4]
+        self.prog_dicts[2]['patterns'] = ['maj7']
+        self.prog_dicts[2]['octaves'] = [4]
+        self.prog_dicts[3]['patterns'] = ['chordarp']
+        self.prog_dicts[3]['octaves'] = [4]
         stamp(5, f"Prog dicts stack is now: {self.prog_dicts}")
+
+    def degree_to_pitch(self, scale, degree):
+        loop = degree//7
+        remainder = degree % 7
+        if remainder == 0:
+            val = loop*12
+        else:
+            val = loop*12 + scale[remainder]
+        stamp(5, f"Degree to pitch:{val}")
+        return val
+
+    def note_pitch(self, root_note, octave, mode, degree, progression, shift):
+        stamp(5, f"Calulating pitch with {root_note, octave, mode, degree, progression, shift}")
+        scale = self.MODES[mode]
+        absolute_degree = 0
+        absolute_pitch = self.NOTES[root_note]
+        absolute_pitch += octave*12
+        absolute_pitch += shift
+        absolute_degree += self.DECODE_PROG[progression]
+        absolute_degree += degree
+        absolute_pitch += self.degree_to_pitch(scale, absolute_degree)
+        stamp(5, f"Note pitch:{absolute_pitch}")
+        return absolute_pitch
+
+
+
+
+    def unpack_prog_dicts(self):
+        for dict_index, dict in enumerate(self.prog_dicts):
+            stamp(5, f"Reading dict {dict}...")
+            for prog_i in range (0, self.def_dict['prog_length']):
+                stamp(5, f"...progression index {prog_i}...")
+                prog = dict['prog'][prog_i]
+                root_note =  dict['root'][prog_i]
+                mode =  dict['mode'][prog_i]
+                for pattern_i in range (0, len(dict['patterns'])):
+                    pattern = dict['patterns'][pattern_i]
+                    octave = dict['octaves'][pattern_i]
+                    stamp(5, f"...pattern {pattern}...")
+                    for note in self.PATTERNS[pattern]:
+                        degree = note['degree']
+                        shift = note['shift']
+                        pitch = self.note_pitch(root_note, octave, mode, degree, prog, shift)
+                        length = note['length']
+                        time = (dict_index*4+prog_i+note['time'][0],note['time'][1])
+                        velocity = note['velocity']
+                        note_data = (pitch, length, time, velocity, 1, 0, False)
+                        self.note_list.append(note_data)
+        stamp(4, f"Packed note data to: {self.note_list}")
+                        
+            
+            
