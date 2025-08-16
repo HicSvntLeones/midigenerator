@@ -33,6 +33,13 @@ class ProgressionGenerator:
             'Bb':10,'B':11, 'Bs':12 
         }
 
+        self.PITCHES = {
+            0:'C', 1:'Cs', 2:'D', 
+            3:'Ds', 4:'E', 5:'F',
+            6:'Fs', 7:'G', 8:'Gs',
+            9:'A', 10:'As', 11:'B',
+        }
+
         self.DECODE_PROG =  { # For new base note relative to root by degree
             'I':0, 'II':1, 'III':2, 'IV':3, 'V':4, 'VI':5, 'VII':6
         }
@@ -276,7 +283,7 @@ class ProgressionGenerator:
                         shift = note['shift']
                         pitch = self.note_pitch(root_note, octave, mode, degree, prog, shift)
                         length = note['length']
-                        time = (dict_index*4+prog_i+note['time'][0],note['time'][1])
+                        time = (dict_index*self.def_dict['prog_length']+prog_i+note['time'][0],note['time'][1])
                         velocity = note['velocity']
                         note_data = (pitch, length, time, velocity, 1, 0, False)
                         self.note_list.append(note_data)
