@@ -289,5 +289,6 @@ class ProgressionGenerator:
                         self.note_list.append(note_data)
         stamp(4, f"Packed note data to: {self.note_list}")
                         
+
             
             
