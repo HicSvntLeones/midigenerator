@@ -1,0 +1,6 @@
+{
+    "LiteLoggerCrit": true,
+    "LiteLoggerWarn": true,
+    "LiteLoggerInfo": true,
+    "LiteLoggerDebugTest": false
+}
