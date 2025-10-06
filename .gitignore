@@ -1,4 +1,7 @@
 __pycache__/
 .vscode/settings.json
 depreciated/
+utils/hsl_tools/hsl_logger/hsl_logger_settings.json
+todo.md
+
 

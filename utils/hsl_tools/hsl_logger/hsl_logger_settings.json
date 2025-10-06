@@ -1,6 +1,5 @@
 {
-    "LiteLoggerCrit": true,
-    "LiteLoggerWarn": true,
-    "LiteLoggerInfo": true,
-    "LiteLoggerDebugTest": false
+    "HSLLoggerCrit": true,
+    "HSLLoggerWarn": true,
+    "HSLLoggerInfo": true
 }

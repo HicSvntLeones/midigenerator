@@ -1,51 +1,62 @@
-#Import LiteLogger from this to create a new instance.
-
 import os
 import json
 
-class LiteLogger:
+class HSLLogger:
     RED = "\033[31m"
     YELLOW = "\033[33m"
     GREEN = "\033[32m"
     BOLD = "\033[1m"
     RESET = "\033[0m"
+    DEFAULTS = {
+            "HSLLoggerCrit":True,
+            "HSLLoggerWarn":True,
+            "HSLLoggerInfo":True,
+        }
 
     def __init__(self):
         self.setup()
-        self.info("LiteLogger instance initialized.")
+        self.info("HSLLogger instance initialized.")
 
     def setup(self):
             self.dir_path = os.path.dirname(__file__)
-            self.settings_path = os.path.join(self.dir_path, "lite_logger_settings.json")
+            self.settings_path = os.path.join(self.dir_path, "hsl_logger_settings.json")
             if not os.path.exists(self.settings_path):
-                self.info("LiteLogger settings not found: Creating...")
+                self.info("HSLLogger settings not found: Creating...")
                 self.create_settings()
             self.load_settings()
+            self.validate_settings()
 
     def load_settings(self):
-        with open(self.settings_path, 'r') as f:
-            self.ids = json.load(f)
-        self.debug("LiteLoggerDebugTest", "Settings loaded.")
+        try:
+            with open(self.settings_path, 'r') as f:
+                self.ids = json.load(f)
+            self.info("HSLLogger settings loaded.")
+        except:
+            self.critical("HSL failed to load settings. File may be malformed.")
 
     def create_settings(self):
         self.info("Creating/resetting settings to defaults.")
-        default_settings = {
-            "LiteLoggerCrit":True,
-            "LiteLoggerWarn":True,
-            "LiteLoggerInfo":True,
-            "LiteLoggerDebugTest":True,
-        }
-
         with open(self.settings_path, 'w') as f:
-            json.dump(default_settings, f, indent=4)
+            json.dump(self.DEFAULTS, f, indent=4)
         self.info(f"Created {self.settings_path} with default settings.")
 
+    def validate_settings(self):
+        valid = True
+        missing_keys = []
+        for key in self.DEFAULTS:
+            if key not in self.ids:
+                valid = False
+                missing_keys.append(key)
+        if valid:
+            self.info("Settings validated.")
+            return
+        self.warning(f"Critical settings key(s) missing: {missing_keys}")
 
 
 
 
     def critical(self, msg = 'no message', id = '', *args):
-        if self.ids['LiteLoggerCrit'] is not True:
+        if self.ids.get('HSLLoggerCrit') is False:
             return
         tag = "[CRITICAL] "
         tag2 = f"[{id}]" if id != '' else ''
@@ -58,7 +69,7 @@ class LiteLogger:
 
 
     def warning(self, msg = 'no message', id = '', *args):
-        if self.ids['LiteLoggerWarn'] is not True:
+        if self.ids.get('HSLLoggerWarn') is False:
             return
         tag = "[WARNING] "
         tag2 = f"[{id}]" if id != '' else ''
@@ -71,7 +82,7 @@ class LiteLogger:
 
 
     def info(self, msg = 'no message', id = '', *args):
-        if self.ids['LiteLoggerInfo'] is not True:
+        if self.ids.get('HSLLoggerInfo') is False:
             return
         tag = "[INFO] "
         tag2 = f"[{id}]" if id != '' else ''
@@ -94,8 +105,6 @@ class LiteLogger:
             print(f"[DEBUG][{id}] {formatted}")
         except:
             self.warning(f"Debug statement formatting error in {id}")
-
-logger = LiteLogger()
     
 
 

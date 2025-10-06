@@ -1,4 +1,4 @@
-from utils.hsl_tools.hsl_logger.hsl_logger import logger
+from utils.hsl_tools import logger
 
 def main():
     logger.critical("crit")
